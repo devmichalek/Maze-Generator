@@ -5,7 +5,7 @@ use GD::Simple;
 use FindBin;
 use lib "$FindBin::Bin/lib";
 use Point;
-use Wall;
+#use Wall;
 
 # resolution
 my $EDGE_LONG = 50;
@@ -29,8 +29,8 @@ for (my $i = 0; $i < $IMAGE_WIDTH /  $EDGE_SPACE; ++$i)
 	{
 		$vmatrix[$i][$j] = Point->new(x => $i * $EDGE_SPACE, y => $j * $EDGE_SPACE);
 		$hmatrix[$i][$j] = Point->new(x => $i * $EDGE_SPACE, y => $j * $EDGE_SPACE);
-		$edges[$i][$j][0] = Wall->new(type => 0);
-		$edges[$i][$j][1] = Wall->new(type => 1);
+		$edges[$i][$j][0] = 0;
+		$edges[$i][$j][1] = 1;
 		$cells[$i][$j] = $idc++;
 	}
 }
@@ -58,18 +58,43 @@ for (my $i = 0; $i < $IMAGE_WIDTH /  $EDGE_SPACE; ++$i)
 		}
 
 		while (1) {
-			my $ret = 1;
+			my $ret = 1; # ret code
+
 			# rand x
 			my $xl = (scalar(@edges) - 1);
 			my $i = (int(rand($xl)) + 1); # 1 ... (size-1)
+
 			# rand y
 			my $yl = (scalar(@{$edges[$i]}) - 1);
 			my $j = (int(rand($yl)) + 1); # 1 ... (size-1)
-			# rand type
-			my $tl = (scalar(@{$edges[$i][$j]}));
-			my $it = (int(rand($tl))); # 0 ... 1
 
-			my $t = $edges[$i][$j][$it]->getType(); # 0 - vertical / 1 - horizontal wall
+			# debug
+			#print("Scope(x) min=1 max=$xl\n");
+			#print("Scope(y) min=1 max=$yl\n");
+			#print("Rand \$x=$i \$y=$j\n");
+			#print("Wall(v) $edges[$i][$j][0]\n");
+			#print("Wall(h) $edges[$i][$j][1]\n");
+			#sleep(3);
+
+			# rand type
+			my $tl = 2;
+			my $it = 0;
+			if ($edges[$i][$j][0] == -1) {
+				$it = 1;
+				$tl = 1;
+			}
+			if ($edges[$i][$j][1] == -1) {
+				$it = 0;
+				$tl = 1;
+			}
+			
+			if ($tl == 2) {
+				$it = int(rand($tl));
+			}
+
+			print("Choosing type from \$i=$i \$j=$j $tl\n");
+			my $t = $edges[$i][$j][$it]; # 0 - vertical / 1 - horizontal wall
+			print("Type set to \$t=$t\n");
 
 			my $newID = $cells[$i][$j];
 			my $oldID = -1;
@@ -80,8 +105,10 @@ for (my $i = 0; $i < $IMAGE_WIDTH /  $EDGE_SPACE; ++$i)
 				} else {
 					$oldID = $cells[$i-1][$j];
 					if ($yl == 2) {
+						print("Removing last wall(v) \$i=$i\n");
 						splice(@vmatrix, $i, 1);	# remove the last wall
 					} else {
+						print("Removing wall(v) \$i=$i \$j=$j\n");
 						splice(@{$vmatrix[$i]}, $j, 1); # remove wall
 					}
 				}
@@ -92,22 +119,29 @@ for (my $i = 0; $i < $IMAGE_WIDTH /  $EDGE_SPACE; ++$i)
 				} else {
 					$oldID = $cells[$i][$j-1];
 					if ($yl == 2) {
+						print("Removing last wall(h) \$i=$i\n");
 						splice(@hmatrix, $i, 1);	# remove the last wall
 					} else {
-						my tmp = \@hmatrix[$i];
-						splice(@tmp, $j, 1);# remove wall
+						print("Removing wall(h) \$i=$i \$j=$j\n");
+						splice(@{$hmatrix[$i]}, $j, 1); # remove wall
 					}
 				}
 			}
 
 			if ($tl == 1) {
-				if ($yl == 2) {
-					splice(@edges, $i, 1);
+				if ($yl <= 2) {
+					#print("Deleting whole column \$i=$i\n");
+					#sleep(1);
+					splice(@edges, $i, 1); # delete whole column
 				} else {
-					splice(@{$edges[$i]}, $j, 1);
+					print("Deleting last wall \$i=$i \$j=$j\n");
+					sleep(1);
+					splice(@{$edges[$i]}, $j, 1); # last wall
 				}
 			} else {
-				splice(@{$edges[$i][$j]}, $t, 1);
+				#print("edges[$i][$j][$t] = $edges[$i][$j][$t]\n");
+				#sleep(1);
+				$edges[$i][$j][$t] = -1; # first wall
 			}
 
 			if ($ret == 1) {
