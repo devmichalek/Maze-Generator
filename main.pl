@@ -180,6 +180,13 @@ for (my $i = 0; $i < $size; ++$i)
 	}
 }
 
+# draw start, end
+$img->fgcolor('white');
+$img->bgcolor('red');
+$img->rectangle(2, 2, $EDGE_LONG - 2, $EDGE_LONG - 2);
+my $corner = $IMAGE_WIDTH - $EDGE_LONG;
+$img->bgcolor('green');
+$img->rectangle($corner + 2, $corner + 2, $corner + $EDGE_LONG - 2, $corner + $EDGE_LONG - 2);
 	
 
 # convert into png data
