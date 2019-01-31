@@ -5,14 +5,13 @@ use GD::Simple;
 use FindBin;
 use lib "$FindBin::Bin/lib";
 use Point;
-#use Wall;
+use Wall;
 
 # resolution
-my $EDGE_LONG = 50;
-my $EDGE_SPACE = 48;
+my $EDGE_LONG = 20;
 
 # prepare image
-my $IMAGE_WIDTH = ($EDGE_SPACE * 21) + 1;
+my $IMAGE_WIDTH = ($EDGE_LONG * 21) + 1;
 my $IMAGE_HEIGHT = $IMAGE_WIDTH;
 my $img = GD::Simple->new($IMAGE_WIDTH, $IMAGE_HEIGHT);
 $img->fgcolor('black');
@@ -23,14 +22,14 @@ my @edges;
 my @vmatrix;	# vertical walls
 my @hmatrix;	# horizontal walls
 my $idc = 0;	# ID counter
-for (my $i = 0; $i < $IMAGE_WIDTH /  $EDGE_SPACE; ++$i)
+for (my $i = 0; $i < $IMAGE_WIDTH /  $EDGE_LONG; ++$i)
 {
-	for (my $j = 0; $j < $IMAGE_HEIGHT /  $EDGE_SPACE; ++$j)
+	for (my $j = 0; $j < $IMAGE_HEIGHT /  $EDGE_LONG; ++$j)
 	{
-		$vmatrix[$i][$j] = Point->new(x => $i * $EDGE_SPACE, y => $j * $EDGE_SPACE);
-		$hmatrix[$i][$j] = Point->new(x => $i * $EDGE_SPACE, y => $j * $EDGE_SPACE);
-		$edges[$i][$j][0] = 0;
-		$edges[$i][$j][1] = 1;
+		$vmatrix[$i][$j] = Point->new(x => $i * $EDGE_LONG, y => $j * $EDGE_LONG);
+		$hmatrix[$i][$j] = Point->new(x => $i * $EDGE_LONG, y => $j * $EDGE_LONG);
+		$edges[$i][$j][0] = Wall->new(x => $i, y => $j, type => 0);
+		$edges[$i][$j][1] = Wall->new(x => $i, y => $j, type => 1);
 		$cells[$i][$j] = $idc++;
 	}
 }
@@ -49,6 +48,7 @@ for (my $i = 0; $i < $IMAGE_WIDTH /  $EDGE_SPACE; ++$i)
 			for (my $j = 0; $j < $idyl; ++$j) {
 				if ($cells[$i][$j] != $cells[0][0]) {
 					$isOneID = 0;
+					#print("There is still more than one ID\n");
 					last; # break
 				}
 			}
@@ -61,29 +61,31 @@ for (my $i = 0; $i < $IMAGE_WIDTH /  $EDGE_SPACE; ++$i)
 			my $ret = 1; # ret code
 
 			# rand x
-			my $xl = (scalar(@edges) - 1);
-			my $i = (int(rand($xl)) + 1); # 1 ... (size-1)
+			my $xl = scalar(@edges);
+			my $i = int(rand($xl));
+
+			if ($xl == 2) {
+				$isOneID = 1;
+				last;
+			}
 
 			# rand y
-			my $yl = (scalar(@{$edges[$i]}) - 1);
-			my $j = (int(rand($yl)) + 1); # 1 ... (size-1)
+			my $yl = scalar(@{$edges[$i]});
+			my $j = int(rand($yl));
 
 			# debug
 			#print("Scope(x) min=1 max=$xl\n");
 			#print("Scope(y) min=1 max=$yl\n");
 			#print("Rand \$x=$i \$y=$j\n");
-			#print("Wall(v) $edges[$i][$j][0]\n");
-			#print("Wall(h) $edges[$i][$j][1]\n");
-			#sleep(3);
 
 			# rand type
 			my $tl = 2;
 			my $it = 0;
-			if ($edges[$i][$j][0] == -1) {
+			if ($edges[$i][$j][0]->getType() == -1) {
 				$it = 1;
 				$tl = 1;
 			}
-			if ($edges[$i][$j][1] == -1) {
+			if ($edges[$i][$j][1]->getType() == -1) {
 				$it = 0;
 				$tl = 1;
 			}
@@ -92,56 +94,49 @@ for (my $i = 0; $i < $IMAGE_WIDTH /  $EDGE_SPACE; ++$i)
 				$it = int(rand($tl));
 			}
 
-			print("Choosing type from \$i=$i \$j=$j $tl\n");
-			my $t = $edges[$i][$j][$it]; # 0 - vertical / 1 - horizontal wall
-			print("Type set to \$t=$t\n");
+			#print("Choosing type from \$i=$i \$j=$j $tl\n");
+			my $t = $edges[$i][$j][$it]->getType(); # 0 - vertical / 1 - horizontal wall
+			#print("Type set to \$t=$t\n");
 
-			my $newID = $cells[$i][$j];
+			
+			my $bx = $edges[$i][$j][$it]->getX();
+			my $by = $edges[$i][$j][$it]->getY();
+			my $newID = $cells[$bx][$by];
 			my $oldID = -1;
 			if ($t == 0) {
-				# $j stays the same, and <- $i -> check cell(left, right)
-				if ($cells[$i-1][$j] == $cells[$i][$j]) {
+				# $by stays the same, and <- $bx -> check cell(left, right)
+				if ($bx == 0 || $bx == ($idxl-1) || ($cells[$bx-1][$by] == $cells[$bx][$by])) {
 					$ret = 0; # we have the same id in these cells, repeat loop
 				} else {
-					$oldID = $cells[$i-1][$j];
-					if ($yl == 2) {
-						print("Removing last wall(v) \$i=$i\n");
-						splice(@vmatrix, $i, 1);	# remove the last wall
-					} else {
-						print("Removing wall(v) \$i=$i \$j=$j\n");
-						splice(@{$vmatrix[$i]}, $j, 1); # remove wall
-					}
+					$oldID = $cells[$bx-1][$by];
+					#print("Removing wall(v) \$bx=$bx \$by=$by\n");
+					$vmatrix[$bx][$by] = Point->new(x => -1, y => -1);
 				}
 			} else {
-				# $i stays the same, and <- $j -> check cell(top, bot)
-				if ($cells[$i][$j-1] == $cells[$i][$j]) {
+				# $bx stays the same, and <- $by -> check cell(top, bot)
+				if ($by == 0 || $by == ($idyl-1) || ($cells[$bx][$by-1] == $cells[$bx][$by])) {
 					$ret = 0; # we have the same id in these cells, repeat loop
 				} else {
-					$oldID = $cells[$i][$j-1];
-					if ($yl == 2) {
-						print("Removing last wall(h) \$i=$i\n");
-						splice(@hmatrix, $i, 1);	# remove the last wall
-					} else {
-						print("Removing wall(h) \$i=$i \$j=$j\n");
-						splice(@{$hmatrix[$i]}, $j, 1); # remove wall
-					}
+					$oldID = $cells[$bx][$by-1];
+					#print("Removing wall(h) \$bx=$bx \$by=$by\n");
+					$hmatrix[$bx][$by] = Point->new(x => -1, y => -1);
 				}
 			}
 
 			if ($tl == 1) {
-				if ($yl <= 2) {
+				if ($yl == 2) {
 					#print("Deleting whole column \$i=$i\n");
 					#sleep(1);
 					splice(@edges, $i, 1); # delete whole column
 				} else {
-					print("Deleting last wall \$i=$i \$j=$j\n");
-					sleep(1);
+					#print("Deleting last wall \$i=$i \$j=$j\n");
+					#sleep(1);
 					splice(@{$edges[$i]}, $j, 1); # last wall
 				}
 			} else {
-				#print("edges[$i][$j][$t] = $edges[$i][$j][$t]\n");
-				#sleep(1);
-				$edges[$i][$j][$t] = -1; # first wall
+					#print("edges[$i][$j][$t] = $edges[$i][$j][$t]\n");
+					#sleep(1);
+					$edges[$i][$j][$t]->setType(-1); # first wall
 			}
 
 			if ($ret == 1) {
@@ -157,6 +152,10 @@ for (my $i = 0; $i < $IMAGE_WIDTH /  $EDGE_SPACE; ++$i)
 				last; # break
 			}
 		}
+
+		if ($isOneID) {
+			last; # there is only one ID
+		}
 	}
 }
 
@@ -166,14 +165,18 @@ for (my $i = 0; $i < $size; ++$i)
 {
 	my $sv = scalar(@{$vmatrix[$i]});
 	for (my $j = 0; $j < $sv; ++$j) {
-		$img->moveTo($vmatrix[$i][$j]->getX(), $vmatrix[$i][$j]->getY());
-		$img->lineTo($vmatrix[$i][$j]->getX(), $vmatrix[$i][$j]->getY() + $EDGE_LONG);
+		if ($vmatrix[$i][$j]->getX() != -1) {
+			$img->moveTo($vmatrix[$i][$j]->getX(), $vmatrix[$i][$j]->getY());
+			$img->lineTo($vmatrix[$i][$j]->getX(), $vmatrix[$i][$j]->getY() + $EDGE_LONG);
+		}
 	}
 
 	my $sh = scalar(@{$hmatrix[$i]});
 	for (my $j = 0; $j < $sh; ++$j) {
-		$img->moveTo($hmatrix[$i][$j]->getX(), $hmatrix[$i][$j]->getY());
-		$img->lineTo($hmatrix[$i][$j]->getX() + $EDGE_LONG, $hmatrix[$i][$j]->getY());
+		if ($hmatrix[$i][$j]->getX() != -1) {
+			$img->moveTo($hmatrix[$i][$j]->getX(), $hmatrix[$i][$j]->getY());
+			$img->lineTo($hmatrix[$i][$j]->getX() + $EDGE_LONG, $hmatrix[$i][$j]->getY());
+		}
 	}
 }
 
