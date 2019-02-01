@@ -1,1 +1,6 @@
 ![maze](https://user-images.githubusercontent.com/19840443/52094116-27028000-25be-11e9-9168-0194ab81a40e.gif)
+![maze](https://user-images.githubusercontent.com/19840443/52094375-23232d80-25bf-11e9-8e51-2c23a26025d3.gif)
+![1](https://user-images.githubusercontent.com/19840443/52095124-2835ac00-25c2-11e9-8541-df0e6c3560db.gif)
+![2](https://user-images.githubusercontent.com/19840443/52095126-2835ac00-25c2-11e9-93c6-73663599d1d6.gif)
+![3](https://user-images.githubusercontent.com/19840443/52095188-6b901a80-25c2-11e9-956a-c2b14a38714a.gif)
+![4](https://user-images.githubusercontent.com/19840443/52095233-97130500-25c2-11e9-9642-78313fcd571b.gif)
