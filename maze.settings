@@ -1,0 +1,7 @@
+20 21 lightblue 3F3F3F
+<wall_length> <wall_count> <wall_color> <background_color>
+Only first line is read.
+Changing the order may cause undefined behaviour.
+Empty file may cause undefined behaviour.
+Colors can be specified by hex value or by name.
+Go to GD::Simple documentation to see list of available colors.

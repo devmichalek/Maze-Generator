@@ -7,9 +7,22 @@ use lib "$FindBin::Bin/lib";
 use Point;
 use Wall;
 
+#File manipulation.
+my @settings;
+open("filedata", "<maze.settings") or die "Couldn't open file maze.settings, $!";
+while(<filedata>) {
+	@settings = split(' ', $_);
+	last;
+}
+close("filedata") || die "Couldn't close maze.settings properly";
+my $setsize = @settings;
+if ($setsize < 4) {
+	die "Number of parameters should be at least 4, $setsize!\n";
+}
+
 #Resolution and settings
-my $EDGE_LONG = 20;
-my $EDGE_MULTIPLIER = 21;
+my $EDGE_LONG = $settings[0];
+my $EDGE_MULTIPLIER = $settings[1];
 my $IMAGE_WIDTH = ($EDGE_LONG * $EDGE_MULTIPLIER) + 1;
 my $IMAGE_HEIGHT = $IMAGE_WIDTH;
 
@@ -140,7 +153,9 @@ while (1) {
 
 # Draw walls in image.
 my $img = GD::Simple->new($IMAGE_WIDTH, $IMAGE_HEIGHT);
-$img->fgcolor('black');
+$img->fgcolor($settings[2]);
+$img->bgcolor($settings[3]);
+$img->rectangle(0, 0, $IMAGE_WIDTH, $IMAGE_HEIGHT);
 my $size = scalar(@vmatrix);
 
 for (my $i = 0; $i < $size; ++$i)
@@ -163,12 +178,14 @@ for (my $i = 0; $i < $size; ++$i)
 }
 
 # Draw start and end.
+my $NEW_EDGE_LONG = $EDGE_LONG / 2;
+$img->fgcolor('black');
+$img->bgcolor('white');
+$img->rectangle(2, 2, $NEW_EDGE_LONG - 2, $NEW_EDGE_LONG - 2);
+my $corner = $IMAGE_WIDTH - $NEW_EDGE_LONG;
 $img->fgcolor('white');
-$img->bgcolor('red');
-$img->rectangle(2, 2, $EDGE_LONG - 2, $EDGE_LONG - 2);
-my $corner = $IMAGE_WIDTH - $EDGE_LONG;
-$img->bgcolor('green');
-$img->rectangle($corner + 2, $corner + 2, $corner + $EDGE_LONG - 2, $corner + $EDGE_LONG - 2);
+$img->bgcolor('black');
+$img->rectangle($corner + 2, $corner + 2, $corner + $NEW_EDGE_LONG - 2, $corner + $NEW_EDGE_LONG - 2);
 	
 # Convert into png data.
 open my $out, '>', 'maze.png' or die;
